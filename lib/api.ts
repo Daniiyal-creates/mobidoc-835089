@@ -6,6 +6,8 @@
  */
 
 import { bilt } from '@/lib/backend';
+import { DEMO_COORDS, demoDiagnosis, demoNearbyShops, demoShopDetails } from '@/lib/demo/seed';
+import { isDemoMode } from '@/lib/store/demo';
 import type {
   Coordinates,
   DiagnoseInput,
@@ -110,11 +112,34 @@ function randomId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+/**
+ * Demo mode answers land after a short beat, so skeletons and spinners still
+ * appear and the flow looks the way it does against the live backend.
+ */
+const DEMO_LATENCY_MS = 700;
+
+function demoPause(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, DEMO_LATENCY_MS));
+}
+
 /** Runs the Gemini diagnosis and returns a complete, screen-ready Diagnosis. */
 export async function requestDiagnosis({
   photoUri,
   ...input
 }: DiagnosisRequest): Promise<Diagnosis> {
+  if (isDemoMode()) {
+    await demoPause();
+    return demoDiagnosis({
+      brand: input.brand,
+      model: input.model,
+      description: input.description,
+      hasPhoto: Boolean(input.imageBase64),
+      ...(input.city ? { city: input.city } : {}),
+      ...(input.languageOverride ? { languageOverride: input.languageOverride } : {}),
+      ...(photoUri ? { photoUri } : {}),
+    });
+  }
+
   const data = await invoke<{ diagnosis: DiagnosisPayload }>('diagnose', { ...input });
 
   return {
@@ -132,6 +157,11 @@ export async function fetchNearbyShops(
   coords: Coordinates,
   query?: string,
 ): Promise<{ shops: RepairShop[]; radiusMeters: number }> {
+  if (isDemoMode()) {
+    await demoPause();
+    return demoNearbyShops(coords, query);
+  }
+
   const data = await invoke<{ shops: RepairShop[]; radiusMeters: number }>('nearby-shops', {
     latitude: coords.latitude,
     longitude: coords.longitude,
@@ -167,6 +197,15 @@ export async function fetchShopDetails(
   placeId: string,
   coords?: Coordinates | null,
 ): Promise<ShopDetails> {
+  if (isDemoMode()) {
+    await demoPause();
+    const seeded = demoShopDetails(placeId, coords ?? DEMO_COORDS);
+    if (!seeded) {
+      throw new ApiError('errors.shopsFailed', `no seeded shop for ${placeId}`);
+    }
+    return seeded;
+  }
+
   const data = await invoke<{ shop: ShopDetails }>('place-details', {
     placeId,
     ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),

@@ -2,11 +2,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { DEMO_ENTRY_PREFIX } from '@/lib/demo/seed';
 import type { Diagnosis, HistoryEntry } from '@/lib/types';
 import { createId } from '@/lib/utils';
 
 /** Older entries fall off so AsyncStorage never grows without bound. */
 const MAX_ENTRIES = 50;
+
+function isDemoEntry(entry: HistoryEntry): boolean {
+  return entry.id.startsWith(DEMO_ENTRY_PREFIX);
+}
 
 interface HistoryState {
   entries: HistoryEntry[];
@@ -14,6 +19,10 @@ interface HistoryState {
   save: (diagnosis: Diagnosis) => HistoryEntry;
   remove: (id: string) => void;
   clear: () => void;
+  /** Swaps in the seeded demo entries; real entries are left untouched. */
+  seedDemo: (entries: HistoryEntry[]) => void;
+  /** Removes only the seeded entries. */
+  removeDemo: () => void;
 }
 
 export const useHistoryStore = create<HistoryState>()(
@@ -36,6 +45,14 @@ export const useHistoryStore = create<HistoryState>()(
       remove: (id) =>
         set((state) => ({ entries: state.entries.filter((entry) => entry.id !== id) })),
       clear: () => set({ entries: [] }),
+      seedDemo: (demoEntries) =>
+        set((state) => ({
+          entries: [...demoEntries, ...state.entries.filter((entry) => !isDemoEntry(entry))]
+            .sort((first, second) => second.savedAt.localeCompare(first.savedAt))
+            .slice(0, MAX_ENTRIES),
+        })),
+      removeDemo: () =>
+        set((state) => ({ entries: state.entries.filter((entry) => !isDemoEntry(entry)) })),
     }),
     {
       name: 'mobidoc.history',

@@ -6,6 +6,7 @@ import { Button, Chip, Skeleton, Typography, useThemeColor } from 'heroui-native
 import { MapPin, Store } from 'lucide-react-native';
 
 import { EmptyState } from '@/components/EmptyState';
+import { DemoBanner } from '@/components/DemoBanner';
 import MapView from '@/components/MapView';
 import { PermissionPrimer } from '@/components/PermissionPrimer';
 import { ShopCard } from '@/components/ShopCard';
@@ -93,6 +94,8 @@ export default function ShopsScreen() {
   return (
     <View className="flex-1">
       <View className="gap-3 px-5 pt-3 pb-2">
+        <DemoBanner />
+
         <View className="flex-row flex-wrap items-center justify-between gap-2">
           <Chip
             size="sm"

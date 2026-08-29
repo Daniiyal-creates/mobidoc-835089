@@ -19,6 +19,8 @@ import {
 import { ArrowRight, MapPin, Stethoscope } from 'lucide-react-native';
 
 import { DamagePhotoCard } from '@/components/DamagePhotoCard';
+import { DemoBanner } from '@/components/DemoBanner';
+import { DemoSampleCases } from '@/components/DemoSampleCases';
 import { StepHeader } from '@/components/StepHeader';
 import { useLocale } from '@/hooks/useDirection';
 import { ApiError, requestDiagnosis } from '@/lib/api';
@@ -132,6 +134,8 @@ export default function DiagnoseScreen() {
           ) : null}
         </View>
 
+        <DemoBanner />
+
         <StepHeader
           step={step}
           totalSteps={DIAGNOSE_STEPS}
@@ -141,6 +145,8 @@ export default function DiagnoseScreen() {
 
         {step === 1 ? (
           <View className="gap-6">
+            <DemoSampleCases />
+
             <View className="gap-3">
               <SearchField value={brandQuery} onChange={setBrandQuery}>
                 <Label>{t('diagnose.brandLabel')}</Label>

@@ -6,6 +6,7 @@ import { Clock, Trash2 } from 'lucide-react-native';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 
 import { EmptyState } from '@/components/EmptyState';
+import { DemoBanner } from '@/components/DemoBanner';
 import { SeverityBadge } from '@/components/SeverityBadge';
 import { useLocale } from '@/hooks/useDirection';
 import { useHistoryStore } from '@/lib/store/history';
@@ -71,6 +72,7 @@ export default function HistoryScreen() {
       data={rows}
       keyExtractor={(row) => row.key}
       contentContainerClassName="gap-3 px-5 pt-3 pb-10"
+      ListHeaderComponent={<DemoBanner className="mb-1" />}
       ListFooterComponent={
         <View className="pt-4">
           {isConfirmingClear ? (

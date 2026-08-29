@@ -7,6 +7,7 @@ import { FadeInDown } from 'react-native-reanimated';
 import { Camera, Check, Clock, Eye, FileQuestion, Store, Wrench } from 'lucide-react-native';
 
 import { CostRangeCard } from '@/components/CostRangeCard';
+import { DemoBanner } from '@/components/DemoBanner';
 import { EmptyState } from '@/components/EmptyState';
 import { SafetyCallout } from '@/components/SafetyCallout';
 import { SeverityBadge } from '@/components/SeverityBadge';
@@ -56,6 +57,8 @@ export default function DiagnosisScreen() {
 
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pt-4 pb-12">
+      <DemoBanner />
+
       <AnimatedView entering={FadeInDown.duration(250)} className="gap-3">
         <View className="flex-row flex-wrap items-center gap-2">
           <SeverityBadge severity={diagnosis.severity} size="md" />

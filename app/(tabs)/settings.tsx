@@ -9,12 +9,14 @@ import {
   Radio,
   RadioGroup,
   Separator,
+  Switch,
   Typography,
   useThemeColor,
 } from 'heroui-native';
 import { MapPin } from 'lucide-react-native';
 
 import { useLocale } from '@/hooks/useDirection';
+import { useDemoStore } from '@/lib/store/demo';
 import { useLocationStore } from '@/lib/store/location';
 import { useSettingsStore } from '@/lib/store/settings';
 import type { UiLanguage } from '@/lib/types';
@@ -38,6 +40,9 @@ export default function SettingsScreen() {
   const city = useLocationStore((state) => state.city);
   const manualCity = useLocationStore((state) => state.manualCity);
   const requestLocation = useLocationStore((state) => state.requestLocation);
+
+  const isDemo = useDemoStore((state) => state.enabled);
+  const setDemoEnabled = useDemoStore((state) => state.setEnabled);
 
   const muted = useThemeColor('muted');
 
@@ -144,6 +149,38 @@ export default function SettingsScreen() {
                 </Button.Label>
               </Button>
             )}
+          </Card.Body>
+        </Card>
+      </View>
+
+      <View className="gap-3">
+        <Typography type="body-sm" color="muted" weight="medium" className={textAlign}>
+          {t('settings.demoSection')}
+        </Typography>
+
+        <Card>
+          <Card.Body className="gap-3">
+            <View className="flex-row items-start justify-between gap-4">
+              <View className="flex-1 gap-1">
+                <Typography type="body-sm" weight="semibold" className={textAlign}>
+                  {t('demo.toggleTitle')}
+                </Typography>
+                <Typography type="body-xs" color="muted" className={textAlign}>
+                  {t('demo.toggleBody')}
+                </Typography>
+              </View>
+              <Switch
+                isSelected={isDemo}
+                onSelectedChange={setDemoEnabled}
+                accessibilityLabel={t('demo.toggleTitle')}
+              />
+            </View>
+
+            <Separator />
+
+            <Typography type="body-xs" color="muted" className={textAlign}>
+              {isDemo ? t('demo.activeHint') : t('demo.historyNote')}
+            </Typography>
           </Card.Body>
         </Card>
       </View>

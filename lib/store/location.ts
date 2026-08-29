@@ -5,6 +5,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { useShallow } from 'zustand/react/shallow';
 
 import { type PakistanCity, findCity } from '@/lib/cities';
+import { DEMO_CITY, DEMO_COORDS } from '@/lib/demo/seed';
+import { useDemoStore } from '@/lib/store/demo';
 import type { Coordinates } from '@/lib/types';
 
 export type LocationPermission = 'unknown' | 'granted' | 'denied';
@@ -100,7 +102,10 @@ export const useLocationStore = create<LocationState>()(
 
 /** GPS coordinates when available, otherwise the hand-picked city centre. */
 export function useSearchCoords(): Coordinates | null {
-  return useLocationStore(
+  // Demo mode stands in for GPS, so the shops screen works with location denied.
+  const isDemo = useDemoStore((state) => state.enabled);
+
+  const coords = useLocationStore(
     useShallow((state) => {
       if (state.coords) return state.coords;
       if (state.manualCity) {
@@ -109,6 +114,8 @@ export function useSearchCoords(): Coordinates | null {
       return null;
     }),
   );
+
+  return coords ?? (isDemo ? DEMO_COORDS : null);
 }
 
 export function getSearchCoords(): Coordinates | null {
@@ -117,15 +124,20 @@ export function getSearchCoords(): Coordinates | null {
   if (state.manualCity) {
     return { latitude: state.manualCity.latitude, longitude: state.manualCity.longitude };
   }
-  return null;
+  return useDemoStore.getState().enabled ? DEMO_COORDS : null;
 }
 
 /** City name used for pricing context; undefined when nothing is known yet. */
 export function useEffectiveCity(): string | undefined {
-  return useLocationStore((state) => state.city ?? state.manualCity?.name ?? undefined);
+  const isDemo = useDemoStore((state) => state.enabled);
+  const city = useLocationStore((state) => state.city ?? state.manualCity?.name ?? undefined);
+
+  return city ?? (isDemo ? DEMO_CITY.name : undefined);
 }
 
 export function getEffectiveCity(): string | undefined {
   const state = useLocationStore.getState();
-  return state.city ?? state.manualCity?.name ?? undefined;
+  const city = state.city ?? state.manualCity?.name ?? undefined;
+
+  return city ?? (useDemoStore.getState().enabled ? DEMO_CITY.name : undefined);
 }

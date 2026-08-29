@@ -216,6 +216,7 @@ export const en = {
     languageHint: 'Diagnoses always come back in the language you write in.',
     followDevice: 'Match my device',
     locationSection: 'Location',
+    demoSection: 'Demo',
     aboutSection: 'About',
     aboutBody:
       'MobiDoc gives you an informed second opinion, not a technician\u2019s inspection. Prices are typical market rates and can change. Always confirm with the shop before any repair.',
@@ -247,6 +248,23 @@ export const en = {
     closing: 'Please let me know your price and how long it will take.',
     footer: 'Sent from MobiDoc.',
     enquiry: 'Do you have time to look at my phone today?',
+  },
+  demo: {
+    banner: 'Demo mode: sample data, not a live diagnosis',
+    toggleTitle: 'Demo mode',
+    toggleBody:
+      'Run the whole app on built-in sample data. No internet, no location and no live diagnosis.',
+    activeHint:
+      'Diagnoses, shops and the sample history are seeded content. Turn this off for real results.',
+    historyNote: 'Sample past diagnoses are added to History and removed when you turn this off.',
+    samplesTitle: 'Demo shortcuts',
+    samplesHint: 'Fills the form for you. One sample each in English, Roman Urdu and Urdu.',
+    sample: {
+      screen: 'Cracked screen',
+      battery: 'Swollen battery',
+      charging: 'Charging issue',
+      software: 'Freezes and restarts',
+    },
   },
   errors: {
     network: "We couldn't reach MobiDoc. Check your connection and try again.",

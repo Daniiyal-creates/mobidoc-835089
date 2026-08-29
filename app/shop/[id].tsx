@@ -5,6 +5,7 @@ import { Button, Card, Chip, Separator, Skeleton, Typography, useThemeColor } fr
 import { Globe, Navigation, Phone, Star, Store } from 'lucide-react-native';
 
 import { EmptyState } from '@/components/EmptyState';
+import { DemoBanner } from '@/components/DemoBanner';
 import { ShopReasonChips, ShopScoreBar } from '@/components/ShopReasons';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { useLocale } from '@/hooks/useDirection';
@@ -85,6 +86,8 @@ export default function ShopDetailScreen() {
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pt-4 pb-12">
       <Stack.Screen options={{ title: shop.name }} />
+
+      <DemoBanner />
 
       <View className="gap-2">
         <Typography type="h3" weight="bold" className={textAlign}>
