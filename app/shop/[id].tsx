@@ -6,16 +6,20 @@ import { Globe, Navigation, Phone, Star, Store } from 'lucide-react-native';
 
 import { EmptyState } from '@/components/EmptyState';
 import { ShopReasonChips, ShopScoreBar } from '@/components/ShopReasons';
+import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { useLocale } from '@/hooks/useDirection';
 import { ApiError, fetchShopDetails } from '@/lib/api';
 import { scoreShop } from '@/lib/recommendation';
 import { useSearchCoords } from '@/lib/store/location';
+import { useLatestDiagnosis } from '@/lib/store/result';
 import { formatDistance, formatRating } from '@/lib/utils';
+import { buildEnquiryMessage, buildRepairMessage } from '@/lib/whatsapp';
 
 export default function ShopDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, textAlign } = useLocale();
   const coords = useSearchCoords();
+  const latestDiagnosis = useLatestDiagnosis();
   const [accent, muted, warning, accentForeground] = useThemeColor([
     'accent',
     'muted',
@@ -71,6 +75,12 @@ export default function ShopDetailScreen() {
 
   // Same scorer the shops list uses, so the reasons here match the ranking.
   const score = scoreShop(shop);
+
+  // With a diagnosis in hand the message carries the device, the fault and the
+  // expected range; without one it is a plain enquiry.
+  const whatsappMessage = latestDiagnosis
+    ? buildRepairMessage(latestDiagnosis, t, shop.name)
+    : buildEnquiryMessage(t);
 
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pt-4 pb-12">
@@ -149,11 +159,25 @@ export default function ShopDetailScreen() {
         </Button>
       </View>
 
-      {!shop.phone ? (
+      {shop.phone ? (
+        <View className="gap-1.5">
+          <WhatsAppButton
+            phone={shop.phone}
+            message={whatsappMessage}
+            label={latestDiagnosis ? t('whatsapp.sendDiagnosis') : t('whatsapp.messageShop')}
+            variant="secondary"
+          />
+          {latestDiagnosis ? (
+            <Typography type="body-xs" color="muted" className={textAlign}>
+              {t('whatsapp.shopHint')}
+            </Typography>
+          ) : null}
+        </View>
+      ) : (
         <Typography type="body-xs" color="muted" className={textAlign}>
           {t('shops.noPhone')}
         </Typography>
-      ) : null}
+      )}
 
       <Card>
         <Card.Body className="gap-3">

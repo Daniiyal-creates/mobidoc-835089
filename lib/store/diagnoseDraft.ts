@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import type { InputLanguage } from '@/lib/types';
+import type { DamagePhoto, InputLanguage } from '@/lib/types';
 
 /** Two input steps; the result lives on its own route. */
 export const DIAGNOSE_STEPS = 2;
@@ -10,11 +10,14 @@ interface DiagnoseDraftState {
   brand: string;
   model: string;
   description: string;
+  /** Optional photo of the damage, sent to the model with the description. */
+  photo: DamagePhoto | null;
   /** Set when the user corrects the language MobiDoc detected. */
   languageOverride: InputLanguage | null;
   setBrand: (brand: string) => void;
   setModel: (model: string) => void;
   setDescription: (description: string) => void;
+  setPhoto: (photo: DamagePhoto | null) => void;
   appendSymptom: (symptom: string) => void;
   setLanguageOverride: (language: InputLanguage | null) => void;
   goToStep: (step: 1 | 2) => void;
@@ -27,10 +30,12 @@ export const useDiagnoseDraftStore = create<DiagnoseDraftState>()((set, get) => 
   brand: '',
   model: '',
   description: '',
+  photo: null,
   languageOverride: null,
   setBrand: (brand) => set({ brand }),
   setModel: (model) => set({ model }),
   setDescription: (description) => set({ description }),
+  setPhoto: (photo) => set({ photo }),
   appendSymptom: (symptom) => {
     const current = get().description.trim();
     if (current.length === 0) {
@@ -42,7 +47,15 @@ export const useDiagnoseDraftStore = create<DiagnoseDraftState>()((set, get) => 
   },
   setLanguageOverride: (languageOverride) => set({ languageOverride }),
   goToStep: (step) => set({ step }),
-  reset: () => set({ step: 1, brand: '', model: '', description: '', languageOverride: null }),
+  reset: () =>
+    set({
+      step: 1,
+      brand: '',
+      model: '',
+      description: '',
+      photo: null,
+      languageOverride: null,
+    }),
 }));
 
 export function useDraftIsDeviceValid(): boolean {

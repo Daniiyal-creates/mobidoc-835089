@@ -18,6 +18,7 @@ import {
 } from 'heroui-native';
 import { ArrowRight, MapPin, Stethoscope } from 'lucide-react-native';
 
+import { DamagePhotoCard } from '@/components/DamagePhotoCard';
 import { StepHeader } from '@/components/StepHeader';
 import { useLocale } from '@/hooks/useDirection';
 import { ApiError, requestDiagnosis } from '@/lib/api';
@@ -40,10 +41,12 @@ export default function DiagnoseScreen() {
   const brand = useDiagnoseDraftStore((state) => state.brand);
   const model = useDiagnoseDraftStore((state) => state.model);
   const description = useDiagnoseDraftStore((state) => state.description);
+  const photo = useDiagnoseDraftStore((state) => state.photo);
   const languageOverride = useDiagnoseDraftStore((state) => state.languageOverride);
   const setBrand = useDiagnoseDraftStore((state) => state.setBrand);
   const setModel = useDiagnoseDraftStore((state) => state.setModel);
   const setDescription = useDiagnoseDraftStore((state) => state.setDescription);
+  const setPhoto = useDiagnoseDraftStore((state) => state.setPhoto);
   const appendSymptom = useDiagnoseDraftStore((state) => state.appendSymptom);
   const goToStep = useDiagnoseDraftStore((state) => state.goToStep);
 
@@ -91,11 +94,14 @@ export default function DiagnoseScreen() {
       description: description.trim(),
       ...(city ? { city } : {}),
       ...(languageOverride ? { languageOverride } : {}),
+      ...(photo
+        ? { imageBase64: photo.base64, imageMimeType: photo.mimeType, photoUri: photo.uri }
+        : {}),
     });
   };
 
   if (diagnose.isPending) {
-    return <AnalysingState />;
+    return <AnalysingState hasPhoto={photo !== null} />;
   }
 
   return (
@@ -255,6 +261,8 @@ export default function DiagnoseScreen() {
               </View>
             </View>
 
+            <DamagePhotoCard photo={photo} onChange={setPhoto} />
+
             {errorMessage ? (
               <View className="bg-severity-danger-soft border-severity-danger rounded-2xl border p-4">
                 <Typography type="body-sm" weight="semibold">
@@ -282,7 +290,7 @@ export default function DiagnoseScreen() {
 }
 
 /** Skeleton stand-in shaped like the result screen, so the wait feels short. */
-function AnalysingState() {
+function AnalysingState({ hasPhoto }: { hasPhoto: boolean }) {
   const { t } = useLocale();
 
   return (
@@ -290,10 +298,10 @@ function AnalysingState() {
       <View className="items-center gap-3">
         <Spinner size="lg" />
         <Typography type="body" weight="semibold" align="center">
-          {t('diagnose.analysing')}
+          {hasPhoto ? t('diagnose.analysingPhoto') : t('diagnose.analysing')}
         </Typography>
         <Typography type="body-sm" color="muted" align="center">
-          {t('diagnose.analysingBody')}
+          {hasPhoto ? t('diagnose.analysingPhotoBody') : t('diagnose.analysingBody')}
         </Typography>
       </View>
 

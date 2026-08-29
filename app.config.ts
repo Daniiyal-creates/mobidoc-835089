@@ -54,6 +54,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             'MobiDoc uses your location to find phone repair shops near you and to price repairs for your city.',
         },
       ],
+      [
+        'expo-image-picker',
+        {
+          cameraPermission:
+            'MobiDoc uses your camera so you can photograph the damage and get a more accurate diagnosis.',
+          photosPermission:
+            'MobiDoc needs access to your photos so you can attach a picture of the damage.',
+        },
+      ],
       ...nativePlugins,
     ],
     experiments: {

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { useSavedDiagnosis } from '@/lib/store/history';
+import { useHistoryStore, useSavedDiagnosis } from '@/lib/store/history';
 import type { Diagnosis } from '@/lib/types';
 
 interface ResultState {
@@ -27,4 +27,15 @@ export function useDiagnosisById(id: string | undefined): Diagnosis | undefined 
 
   if (saved) return saved;
   return session && session.id === id ? session : undefined;
+}
+
+/**
+ * The diagnosis a shop screen should talk about: this session's result, or the
+ * most recently saved one when the app was reopened.
+ */
+export function useLatestDiagnosis(): Diagnosis | undefined {
+  const session = useResultStore((state) => state.diagnosis);
+  const lastSaved = useHistoryStore((state) => state.entries[0]?.diagnosis);
+
+  return session ?? lastSaved;
 }

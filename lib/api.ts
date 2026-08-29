@@ -16,7 +16,16 @@ import type {
 } from '@/lib/types';
 
 /** The diagnosis fields the server produces; the client adds id, time, and device. */
-export type DiagnosisPayload = Omit<Diagnosis, 'id' | 'createdAt' | 'device' | 'description'>;
+export type DiagnosisPayload = Omit<
+  Diagnosis,
+  'id' | 'createdAt' | 'device' | 'description' | 'photoUri'
+>;
+
+/** A diagnosis request plus the client-only fields the server never needs. */
+export interface DiagnosisRequest extends DiagnoseInput {
+  /** Local URI of the attached photo, kept for the result screen's preview. */
+  photoUri?: string;
+}
 
 /** Thrown for any automation failure, carrying a translation key for the UI. */
 export class ApiError extends Error {
@@ -83,6 +92,10 @@ function mapServerError(code: string): string {
       return 'errors.diagnosisFailed';
     case 'invalid_coordinates':
       return 'errors.locationUnavailable';
+    case 'image_too_large':
+      return 'errors.photoTooLarge';
+    case 'image_unreadable':
+      return 'errors.photoUnreadable';
     case 'places_failed':
     case 'not_found':
       return 'errors.shopsFailed';
@@ -98,7 +111,10 @@ function randomId(): string {
 }
 
 /** Runs the Gemini diagnosis and returns a complete, screen-ready Diagnosis. */
-export async function requestDiagnosis(input: DiagnoseInput): Promise<Diagnosis> {
+export async function requestDiagnosis({
+  photoUri,
+  ...input
+}: DiagnosisRequest): Promise<Diagnosis> {
   const data = await invoke<{ diagnosis: DiagnosisPayload }>('diagnose', { ...input });
 
   return {
@@ -107,6 +123,7 @@ export async function requestDiagnosis(input: DiagnoseInput): Promise<Diagnosis>
     device: { brand: input.brand, model: input.model },
     description: input.description,
     ...data.diagnosis,
+    ...(photoUri ? { photoUri } : {}),
   };
 }
 

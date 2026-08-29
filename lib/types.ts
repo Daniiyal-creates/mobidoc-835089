@@ -20,6 +20,17 @@ export interface Device {
   model: string;
 }
 
+/** A photo of the damage, already shrunk small enough to send inline. */
+export interface DamagePhoto {
+  /** Local file URI, used for the on-screen preview. */
+  uri: string;
+  /** JPEG bytes, base64 encoded, sent to the diagnose automation. */
+  base64: string;
+  mimeType: 'image/jpeg';
+  width: number;
+  height: number;
+}
+
 export interface DiagnoseInput {
   brand: string;
   model: string;
@@ -29,6 +40,9 @@ export interface DiagnoseInput {
   city?: string;
   /** Set when the user corrects the auto-detected language. */
   languageOverride?: InputLanguage;
+  /** Base64 JPEG of the damage, when the user attached a photo. */
+  imageBase64?: string;
+  imageMimeType?: string;
 }
 
 export type SafetyFlagKind =
@@ -90,6 +104,13 @@ export interface Diagnosis {
   diyFeasible: boolean;
   diyNote?: string;
   questionsForShop: string[];
+  /**
+   * What the model could make out in the attached photo. Absent when no photo
+   * was sent, and on entries saved before photos existed.
+   */
+  visualFindings?: string[];
+  /** Local URI of the photo that was sent, kept for the on-screen preview. */
+  photoUri?: string;
 }
 
 /** A trimmed review excerpt, used to read what customers keep mentioning. */

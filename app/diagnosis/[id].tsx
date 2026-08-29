@@ -1,22 +1,25 @@
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Image, ScrollView, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { Button, Card, Chip, Separator, Spinner, Typography, useThemeColor } from 'heroui-native';
 import { FadeInDown } from 'react-native-reanimated';
-import { Check, Clock, FileQuestion, Store, Wrench } from 'lucide-react-native';
+import { Camera, Check, Clock, Eye, FileQuestion, Store, Wrench } from 'lucide-react-native';
 
 import { CostRangeCard } from '@/components/CostRangeCard';
 import { EmptyState } from '@/components/EmptyState';
 import { SafetyCallout } from '@/components/SafetyCallout';
 import { SeverityBadge } from '@/components/SeverityBadge';
 import { AnimatedView } from '@/components/ui/primitives/AnimatedView';
+import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { useLocale } from '@/hooks/useDirection';
 import { ApiError, requestDiagnosis } from '@/lib/api';
+import { useDiagnoseDraftStore } from '@/lib/store/diagnoseDraft';
 import { useHistoryStore } from '@/lib/store/history';
 import { useEffectiveCity } from '@/lib/store/location';
 import { useDiagnosisById, useResultStore } from '@/lib/store/result';
 import type { Diagnosis, InputLanguage } from '@/lib/types';
+import { buildRepairMessage } from '@/lib/whatsapp';
 
 const INPUT_LANGUAGES: readonly InputLanguage[] = ['en', 'ur', 'ur-roman'];
 
@@ -88,6 +91,8 @@ export default function DiagnosisScreen() {
           </Typography>
         </Card.Body>
       </Card>
+
+      <PhotoFindings diagnosis={diagnosis} />
 
       <View className="gap-3">
         <Typography type="h5" weight="bold" className={textAlign}>
@@ -176,6 +181,16 @@ export default function DiagnosisScreen() {
           <Store size={18} color={accentForeground} />
         </Button>
 
+        <WhatsAppButton
+          message={buildRepairMessage(diagnosis, t)}
+          label={t('whatsapp.shareCta')}
+          variant="secondary"
+        />
+
+        <Typography type="body-xs" color="muted" align="center">
+          {t('whatsapp.shareHint')}
+        </Typography>
+
         {isSaved ? (
           <View className="flex-row items-center justify-center gap-2 py-2">
             <Check size={16} color={success} />
@@ -194,6 +209,57 @@ export default function DiagnosisScreen() {
 }
 
 /**
+ * The photo the user attached plus what the model could actually make out in
+ * it. Shown together so a finding can always be checked against the picture.
+ */
+function PhotoFindings({ diagnosis }: { diagnosis: Diagnosis }) {
+  const { t, textAlign } = useLocale();
+  const [accent, muted] = useThemeColor(['accent', 'muted']);
+
+  if (!diagnosis.photoUri) return null;
+
+  const findings = diagnosis.visualFindings ?? [];
+
+  return (
+    <Card>
+      <Card.Body className="gap-3">
+        <View className="flex-row items-center gap-2">
+          <Camera size={16} color={accent} />
+          <Typography type="body-sm" weight="semibold" className="flex-1">
+            {t('result.visualTitle')}
+          </Typography>
+        </View>
+
+        <Image
+          source={{ uri: diagnosis.photoUri }}
+          style={{ width: '100%', height: 200, borderRadius: 16 }}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+          accessibilityLabel={t('result.visualPhotoA11y')}
+        />
+
+        {findings.length === 0 ? (
+          <Typography type="body-sm" color="muted" className={textAlign}>
+            {t('result.visualNone')}
+          </Typography>
+        ) : (
+          <View className="gap-2">
+            {findings.map((finding) => (
+              <View key={finding} className="flex-row items-start gap-2">
+                <Eye size={14} color={muted} />
+                <Typography type="body-sm" className="flex-1">
+                  {finding}
+                </Typography>
+              </View>
+            ))}
+          </View>
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+
+/**
  * Gemini answers in whichever language it detected. If it guessed wrong, the
  * user picks the right one and the diagnosis is redone in that language.
  */
@@ -202,6 +268,11 @@ function LanguageCorrection({ diagnosis }: { diagnosis: Diagnosis }) {
   const [isOpen, setIsOpen] = useState(false);
   const city = useEffectiveCity();
   const setResult = useResultStore((state) => state.setResult);
+  const draftPhoto = useDiagnoseDraftStore((state) => state.photo);
+
+  // Only the URI travels with a diagnosis, so the bytes come from the draft —
+  // and only when it is still the same photo this diagnosis was built from.
+  const photo = draftPhoto && draftPhoto.uri === diagnosis.photoUri ? draftPhoto : null;
 
   const redo = useMutation({
     mutationFn: requestDiagnosis,
@@ -257,6 +328,13 @@ function LanguageCorrection({ diagnosis }: { diagnosis: Diagnosis }) {
                     description: diagnosis.description,
                     languageOverride: language,
                     ...(city ? { city } : {}),
+                    ...(photo
+                      ? {
+                          imageBase64: photo.base64,
+                          imageMimeType: photo.mimeType,
+                          photoUri: photo.uri,
+                        }
+                      : {}),
                   })
                 }
                 accessibilityRole="button"
