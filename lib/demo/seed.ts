@@ -1035,6 +1035,9 @@ function toRepairShop(seed: DemoShopSeed, center: Coordinates): RepairShop {
     distanceMeters: distanceMeters(center, { latitude, longitude }),
     openNow: seed.openNow,
     phone: seed.phone,
+    // Seeds are written in E.164 already, so the WhatsApp path in demo mode
+    // exercises the same field the live details response fills.
+    internationalPhone: seed.phone,
     latitude,
     longitude,
     mapsUri: `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`,

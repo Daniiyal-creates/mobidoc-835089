@@ -24,6 +24,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
+        // Needed for the WhatsApp handoff: iOS blocks whatsapp:// checks from
+        // apps that have not declared the scheme.
+        LSApplicationQueriesSchemes: ['whatsapp'],
       },
       supportsTablet: true,
       bundleIdentifier: process.env.BILT_IOS_BUNDLE_ID ?? 'com.yourcompany.yourapp',

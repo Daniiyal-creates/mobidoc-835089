@@ -236,6 +236,9 @@ export const en = {
     shopHint:
       'Your phone, the fault and the questions to ask go in the message. The price estimate does not.',
     unavailable: "WhatsApp couldn't be opened on this device.",
+    copied: 'WhatsApp did not open, so the message was copied. Paste it into a chat.',
+    landlineOnly:
+      "This shop only lists a landline, which can't receive WhatsApp. Call them, or open WhatsApp and pick the chat yourself.",
     greeting: 'Assalam o alaikum. I need a phone repair.',
     greetingShop: 'Assalam o alaikum. I found your shop on MobiDoc and need a phone repair.',
     device: 'Phone: {{device}}',

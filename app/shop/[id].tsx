@@ -14,7 +14,7 @@ import { scoreShop } from '@/lib/recommendation';
 import { useSearchCoords } from '@/lib/store/location';
 import { useLatestDiagnosis } from '@/lib/store/result';
 import { formatDistance, formatRating } from '@/lib/utils';
-import { buildEnquiryMessage, buildRepairMessage } from '@/lib/whatsapp';
+import { buildEnquiryMessage, buildRepairMessage, resolveWhatsAppTarget } from '@/lib/whatsapp';
 
 export default function ShopDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -82,6 +82,10 @@ export default function ShopDetailScreen() {
   const whatsappMessage = latestDiagnosis
     ? buildRepairMessage(latestDiagnosis, t, shop.name)
     : buildEnquiryMessage(t);
+
+  // Plenty of repair shops list a landline. WhatsApp cannot deliver to one, so
+  // we say that instead of opening a link WhatsApp will reject.
+  const whatsappTarget = resolveWhatsAppTarget(shop.internationalPhone, shop.phone);
 
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pt-4 pb-12">
@@ -162,10 +166,10 @@ export default function ShopDetailScreen() {
         </Button>
       </View>
 
-      {shop.phone ? (
+      {whatsappTarget.kind === 'mobile' ? (
         <View className="gap-1.5">
           <WhatsAppButton
-            phone={shop.phone}
+            number={whatsappTarget.number}
             message={whatsappMessage}
             label={latestDiagnosis ? t('whatsapp.sendDiagnosis') : t('whatsapp.messageShop')}
             variant="secondary"
@@ -175,6 +179,17 @@ export default function ShopDetailScreen() {
               {t('whatsapp.shopHint')}
             </Typography>
           ) : null}
+        </View>
+      ) : whatsappTarget.kind === 'landline' ? (
+        <View className="gap-1.5">
+          <WhatsAppButton
+            message={whatsappMessage}
+            label={t('whatsapp.shareCta')}
+            variant="secondary"
+          />
+          <Typography type="body-xs" color="muted" className={textAlign}>
+            {t('whatsapp.landlineOnly')}
+          </Typography>
         </View>
       ) : (
         <Typography type="body-xs" color="muted" className={textAlign}>

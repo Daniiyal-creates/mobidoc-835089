@@ -129,6 +129,12 @@ export interface RepairShop {
   distanceMeters: number;
   openNow: boolean | null;
   phone: string | null;
+  /**
+   * Same number in E.164 form (`+92 300 1234567`). WhatsApp links need this;
+   * guessing the country code from the national form produces dead links.
+   * Only the shop-details response carries it.
+   */
+  internationalPhone?: string | null;
   latitude: number;
   longitude: number;
   /** Google Maps link used for the directions action. */
