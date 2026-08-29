@@ -17,6 +17,10 @@ export const en = {
     somethingWentWrong: 'Something went wrong',
     connectionProblem: "We couldn't reach MobiDoc. Check your connection and try again.",
   },
+  splash: {
+    tagline: 'Diagnose your phone, then find a shop you can trust.',
+    loading: 'Starting MobiDoc',
+  },
   tabs: {
     diagnose: 'Diagnose',
     shops: 'Shops',

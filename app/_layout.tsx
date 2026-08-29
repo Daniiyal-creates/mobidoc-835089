@@ -11,7 +11,7 @@ import {
 } from '@expo-google-fonts/inter';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import * as DevClient from 'expo-dev-client';
 import { HeroUINativeProvider, useThemeColor } from 'heroui-native';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -31,6 +31,7 @@ import { initPostHog } from '@/lib/posthog';
 import { registerServiceWorker } from '@/lib/registerServiceWorker';
 import { reportErrorToParent } from '@/lib/reportPreviewError';
 import { InstallPrompt } from '@/components/InstallPrompt';
+import { LoadingScreen } from '@/components/LoadingScreen';
 
 /**
  * Custom ErrorBoundary that reports React render errors to the parent window (Bilt preview iframe)
@@ -53,6 +54,9 @@ Uniwind.setTheme('light');
 
 void SplashScreen.preventAutoHideAsync();
 
+/** Minimum time the branded loading screen stays on screen before the app shell. */
+const BOOT_DELAY_MS = 2000;
+
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     Inter_400Regular,
@@ -60,6 +64,8 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+  const fontsSettled = loaded || Boolean(error);
+  const [bootDelayDone, setBootDelayDone] = useState(false);
 
   // Report uncaught JS errors and unhandled promise rejections to parent (Bilt preview iframe)
   useEffect(() => {
@@ -133,13 +139,16 @@ export default function RootLayout() {
     registerServiceWorker();
   }, []);
 
+  // Hide the native splash as soon as fonts settle, then hold the branded
+  // loading screen for a fixed beat so the boot has a deliberate rhythm.
   useEffect(() => {
-    if (loaded || error) {
-      void SplashScreen.hideAsync();
-    }
-  }, [loaded, error]);
+    if (!fontsSettled) return undefined;
+    void SplashScreen.hideAsync();
+    const timer = setTimeout(() => setBootDelayDone(true), BOOT_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [fontsSettled]);
 
-  if (!loaded && !error) {
+  if (!fontsSettled) {
     return null;
   }
 
@@ -147,8 +156,14 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <HeroUINativeProvider>
-          <AppStack />
-          <InstallPrompt />
+          {bootDelayDone ? (
+            <>
+              <AppStack />
+              <InstallPrompt />
+            </>
+          ) : (
+            <LoadingScreen durationMs={BOOT_DELAY_MS} />
+          )}
         </HeroUINativeProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

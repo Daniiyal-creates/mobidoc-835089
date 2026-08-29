@@ -12,6 +12,10 @@ export const ur = {
     somethingWentWrong: 'کچھ غلط ہو گیا',
     connectionProblem: 'رابطہ نہیں ہو سکا۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔',
   },
+  splash: {
+    tagline: 'اپنے فون کی تشخیص کریں، پھر قابلِ اعتماد دکان تلاش کریں۔',
+    loading: 'MobiDoc شروع ہو رہا ہے',
+  },
   tabs: {
     diagnose: 'تشخیص',
     shops: 'دکانیں',
