@@ -5,8 +5,10 @@ import { Button, Card, Chip, Separator, Skeleton, Typography, useThemeColor } fr
 import { Globe, Navigation, Phone, Star, Store } from 'lucide-react-native';
 
 import { EmptyState } from '@/components/EmptyState';
+import { ShopReasonChips, ShopScoreBar } from '@/components/ShopReasons';
 import { useLocale } from '@/hooks/useDirection';
 import { ApiError, fetchShopDetails } from '@/lib/api';
+import { scoreShop } from '@/lib/recommendation';
 import { useSearchCoords } from '@/lib/store/location';
 import { formatDistance, formatRating } from '@/lib/utils';
 
@@ -66,6 +68,9 @@ export default function ShopDetailScreen() {
         : `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
     void Linking.openURL(url);
   };
+
+  // Same scorer the shops list uses, so the reasons here match the ranking.
+  const score = scoreShop(shop);
 
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pt-4 pb-12">
@@ -149,6 +154,30 @@ export default function ShopDetailScreen() {
           {t('shops.noPhone')}
         </Typography>
       ) : null}
+
+      <Card>
+        <Card.Body className="gap-3">
+          <View className="flex-row items-center justify-between gap-3">
+            <Typography type="body-sm" weight="semibold" className="flex-1">
+              {t('shops.whyTitle')}
+            </Typography>
+            <Typography
+              type="body-xs"
+              color="muted"
+              accessibilityLabel={t('shops.scoreA11y', { score: score.score })}
+            >
+              {t('shops.scoreLabel', { score: score.score })}
+            </Typography>
+          </View>
+
+          <ShopScoreBar score={score.score} />
+          <ShopReasonChips score={score} limit={4} />
+
+          <Typography type="body-xs" color="muted" className={textAlign}>
+            {t('shops.rankingNote')}
+          </Typography>
+        </Card.Body>
+      </Card>
 
       <Card>
         <Card.Body className="gap-2">

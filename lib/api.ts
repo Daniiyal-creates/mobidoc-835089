@@ -6,7 +6,14 @@
  */
 
 import { bilt } from '@/lib/backend';
-import type { Coordinates, DiagnoseInput, Diagnosis, RepairShop, ShopDetails } from '@/lib/types';
+import type {
+  Coordinates,
+  DiagnoseInput,
+  Diagnosis,
+  RepairShop,
+  ReviewSnippet,
+  ShopDetails,
+} from '@/lib/types';
 
 /** The diagnosis fields the server produces; the client adds id, time, and device. */
 export type DiagnosisPayload = Omit<Diagnosis, 'id' | 'createdAt' | 'device' | 'description'>;
@@ -103,7 +110,7 @@ export async function requestDiagnosis(input: DiagnoseInput): Promise<Diagnosis>
   };
 }
 
-/** Nearby repair shops, already ranked by rating and distance on the server. */
+/** Nearby repair shops with the signals the recommendation scorer needs. */
 export async function fetchNearbyShops(
   coords: Coordinates,
   query?: string,
@@ -114,7 +121,28 @@ export async function fetchNearbyShops(
     ...(query ? { query } : {}),
   });
 
-  return { shops: data.shops ?? [], radiusMeters: data.radiusMeters };
+  return { shops: (data.shops ?? []).map(withReviewSnippets), radiusMeters: data.radiusMeters };
+}
+
+/**
+ * Guarantees `reviewSnippets` exists and holds usable entries, so screens never
+ * have to guard against an older cached payload or a Places tier without
+ * review text.
+ */
+function withReviewSnippets<T extends RepairShop>(shop: T): T {
+  const snippets = Array.isArray(shop.reviewSnippets) ? shop.reviewSnippets : [];
+
+  return {
+    ...shop,
+    reviewSnippets: snippets
+      .filter(
+        (snippet): snippet is ReviewSnippet =>
+          typeof snippet?.text === 'string' &&
+          snippet.text.trim().length > 0 &&
+          typeof snippet.rating === 'number',
+      )
+      .slice(0, 3),
+  };
 }
 
 /** Full profile for one shop. Distance is relative to `coords` when provided. */
@@ -127,5 +155,17 @@ export async function fetchShopDetails(
     ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
   });
 
-  return data.shop;
+  const reviews = Array.isArray(data.shop.reviews) ? data.shop.reviews : [];
+  const existing = Array.isArray(data.shop.reviewSnippets) ? data.shop.reviewSnippets : [];
+
+  // The details automation returns full reviews; reuse them as the snippets the
+  // recommendation scorer reads, so the same reasons show on this screen.
+  return withReviewSnippets({
+    ...data.shop,
+    reviews,
+    reviewSnippets:
+      existing.length > 0
+        ? existing
+        : reviews.map((review) => ({ rating: review.rating, text: review.text })),
+  });
 }

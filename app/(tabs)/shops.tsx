@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -9,13 +9,21 @@ import { EmptyState } from '@/components/EmptyState';
 import MapView from '@/components/MapView';
 import { PermissionPrimer } from '@/components/PermissionPrimer';
 import { ShopCard } from '@/components/ShopCard';
+import { TopPickCard } from '@/components/TopPickCard';
 import { useLocale } from '@/hooks/useDirection';
 import { ApiError, fetchNearbyShops } from '@/lib/api';
+import { rankShops, SORT_MODES, sortRanked, type SortMode } from '@/lib/recommendation';
 import { useEffectiveCity, useLocationStore, useSearchCoords } from '@/lib/store/location';
 import type { RepairShop } from '@/lib/types';
 import { cn, formatDistance } from '@/lib/utils';
 
 type ShopsView = 'list' | 'map';
+
+/** A pick only leads the screen when there are other shops to beat. */
+const MIN_SHOPS_FOR_TOP_PICK = 3;
+
+/** Stable reference so `shops` doesn't change identity every render when there is no data yet. */
+const NO_SHOPS: RepairShop[] = [];
 
 function openShop(shop: RepairShop) {
   router.push({ pathname: '/shop/[id]', params: { id: shop.id } });
@@ -28,6 +36,7 @@ export default function ShopsScreen() {
   const isLocating = useLocationStore((state) => state.isLocating);
   const requestLocation = useLocationStore((state) => state.requestLocation);
   const [view, setView] = useState<ShopsView>('list');
+  const [sort, setSort] = useState<SortMode>('recommended');
   const [accent, muted] = useThemeColor(['accent', 'muted']);
 
   const shopsQuery = useQuery({
@@ -43,6 +52,16 @@ export default function ShopsScreen() {
     enabled: coords !== null,
     staleTime: 5 * 60 * 1000,
   });
+
+  const shops = shopsQuery.data?.shops ?? NO_SHOPS;
+
+  // Ranking is done once; changing the sort only re-orders the same scores.
+  const ranked = useMemo(() => rankShops(shops), [shops]);
+  const ordered = useMemo(() => sortRanked(ranked, sort), [ranked, sort]);
+
+  const topPick =
+    sort === 'recommended' && ordered.length >= MIN_SHOPS_FOR_TOP_PICK ? ordered[0] : null;
+  const listData = topPick ? ordered.slice(1) : ordered;
 
   if (!coords) {
     return (
@@ -65,7 +84,6 @@ export default function ShopsScreen() {
     );
   }
 
-  const shops = shopsQuery.data?.shops ?? [];
   const radiusMeters = shopsQuery.data?.radiusMeters;
 
   const errorMessage = shopsQuery.error
@@ -113,6 +131,35 @@ export default function ShopsScreen() {
             );
           })}
         </View>
+
+        {view === 'list' && shops.length > 0 ? (
+          <View className="gap-2">
+            <View className="flex-row flex-wrap gap-2">
+              {SORT_MODES.map((mode) => {
+                const isActive = sort === mode;
+                return (
+                  <Chip
+                    key={mode}
+                    size="sm"
+                    variant={isActive ? 'primary' : 'tertiary'}
+                    color={isActive ? 'accent' : 'default'}
+                    onPress={() => setSort(mode)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isActive }}
+                  >
+                    <Chip.Label>{t(`shops.sort.${mode}`)}</Chip.Label>
+                  </Chip>
+                );
+              })}
+            </View>
+
+            {sort === 'recommended' ? (
+              <Typography type="body-xs" color="muted">
+                {t('shops.rankingNote')}
+              </Typography>
+            ) : null}
+          </View>
+        ) : null}
       </View>
 
       {shopsQuery.isPending ? (
@@ -132,7 +179,7 @@ export default function ShopsScreen() {
           actionLabel={t('common.retry')}
           onAction={() => void shopsQuery.refetch()}
         />
-      ) : shops.length === 0 ? (
+      ) : ordered.length === 0 ? (
         <EmptyState
           icon={Store}
           title={t('shops.emptyTitle')}
@@ -142,10 +189,24 @@ export default function ShopsScreen() {
         />
       ) : view === 'list' ? (
         <FlatList
-          data={shops}
-          keyExtractor={(shop) => shop.id}
+          data={listData}
+          keyExtractor={(entry) => entry.shop.id}
           contentContainerClassName="gap-3 px-5 pb-8 pt-1"
-          renderItem={({ item }) => <ShopCard shop={item} onPress={() => openShop(item)} />}
+          ListHeaderComponent={
+            topPick ? (
+              <View className="mb-3">
+                <TopPickCard entry={topPick} onPress={() => openShop(topPick.shop)} />
+              </View>
+            ) : null
+          }
+          renderItem={({ item }) => (
+            <ShopCard
+              shop={item.shop}
+              score={item.score}
+              rank={item.rank}
+              onPress={() => openShop(item.shop)}
+            />
+          )}
           refreshControl={
             <RefreshControl
               refreshing={shopsQuery.isFetching}
@@ -164,14 +225,14 @@ export default function ShopsScreen() {
             latitudeDelta: 0.06,
             longitudeDelta: 0.06,
           }}
-          markers={shops.map((shop) => ({
-            id: shop.id,
-            coordinate: { latitude: shop.latitude, longitude: shop.longitude },
-            title: shop.name,
-            description: formatDistance(shop.distanceMeters),
-            color: 'cyan',
-            onPress: () => openShop(shop),
-            onCalloutPress: () => openShop(shop),
+          markers={ranked.map((entry) => ({
+            id: entry.shop.id,
+            coordinate: { latitude: entry.shop.latitude, longitude: entry.shop.longitude },
+            title: entry.rank === 1 ? `${t('shops.topPick')}: ${entry.shop.name}` : entry.shop.name,
+            description: `${t('shops.scoreLabel', { score: entry.score.score })} · ${formatDistance(entry.shop.distanceMeters)}`,
+            color: entry.rank === 1 ? 'green' : 'cyan',
+            onPress: () => openShop(entry.shop),
+            onCalloutPress: () => openShop(entry.shop),
           }))}
         />
       )}

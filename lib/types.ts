@@ -92,6 +92,12 @@ export interface Diagnosis {
   questionsForShop: string[];
 }
 
+/** A trimmed review excerpt, used to read what customers keep mentioning. */
+export interface ReviewSnippet {
+  rating: number;
+  text: string;
+}
+
 export interface RepairShop {
   /** Google Places place id. */
   id: string;
@@ -106,6 +112,11 @@ export interface RepairShop {
   longitude: number;
   /** Google Maps link used for the directions action. */
   mapsUri?: string;
+  /**
+   * Up to three short review excerpts. Empty when Places returned none, in
+   * which case the recommendation falls back to ratings and distance alone.
+   */
+  reviewSnippets: ReviewSnippet[];
 }
 
 export interface ShopReview {
