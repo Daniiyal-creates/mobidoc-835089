@@ -10,13 +10,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
   return {
     ...config,
-    name: 'FixRadar',
-    slug: 'fixradar',
+    name: 'MobiDoc',
+    slug: 'mobidoc',
     newArchEnabled: true,
     version: process.env.BILT_APP_VERSION ?? '1.0.0',
     orientation: 'portrait',
     userInterfaceStyle: 'automatic',
-    scheme: 'fixradar',
+    scheme: 'mobidoc',
     runtimeVersion: {
       policy: 'appVersion',
     },
@@ -41,7 +41,21 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     extra: {
       appStoreAppId: process.env.BILT_APP_STORE_APP_ID,
     },
-    plugins: ['expo-router', 'expo-font', ...nativePlugins],
+    plugins: [
+      'expo-router',
+      'expo-font',
+      'expo-localization',
+      [
+        'expo-location',
+        {
+          locationAlwaysAndWhenInUsePermission:
+            'MobiDoc uses your location to find phone repair shops near you and to price repairs for your city.',
+          locationWhenInUsePermission:
+            'MobiDoc uses your location to find phone repair shops near you and to price repairs for your city.',
+        },
+      ],
+      ...nativePlugins,
+    ],
     experiments: {
       typedRoutes: true,
       reactCompiler: true,

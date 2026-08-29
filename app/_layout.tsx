@@ -13,7 +13,9 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 import { useEffect } from 'react';
 import * as DevClient from 'expo-dev-client';
-import { HeroUINativeProvider } from 'heroui-native';
+import { HeroUINativeProvider, useThemeColor } from 'heroui-native';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Uniwind } from 'uniwind';
 import {
   ErrorBoundary as ExpoErrorBoundary,
@@ -22,6 +24,9 @@ import {
   Stack,
 } from 'expo-router';
 
+// oxlint-disable-next-line eslint-plugin-import/no-unassigned-import
+import '@/lib/i18n';
+import { queryClient } from '@/lib/queryClient';
 import { initPostHog } from '@/lib/posthog';
 import { registerServiceWorker } from '@/lib/registerServiceWorker';
 import { reportErrorToParent } from '@/lib/reportPreviewError';
@@ -140,12 +145,41 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <HeroUINativeProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ title: 'Habits', headerShown: false }} />
-        </Stack>
-        <InstallPrompt />
-      </HeroUINativeProvider>
+      <QueryClientProvider client={queryClient}>
+        <HeroUINativeProvider>
+          <AppStack />
+          <InstallPrompt />
+        </HeroUINativeProvider>
+      </QueryClientProvider>
     </GestureHandlerRootView>
+  );
+}
+
+/**
+ * Lives inside the providers so header colours come from the theme and titles
+ * from the active language.
+ */
+function AppStack() {
+  const { t } = useTranslation();
+  const [background, foreground] = useThemeColor(['background', 'foreground']);
+
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: background },
+        headerTintColor: foreground,
+        headerTitleStyle: { color: foreground },
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: background },
+      }}
+    >
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="diagnosis/[id]" options={{ title: t('result.title') }} />
+      <Stack.Screen name="shop/[id]" options={{ title: '' }} />
+      <Stack.Screen
+        name="city-picker"
+        options={{ title: t('cityPicker.title'), presentation: 'modal' }}
+      />
+    </Stack>
   );
 }
