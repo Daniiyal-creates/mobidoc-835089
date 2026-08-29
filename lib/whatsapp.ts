@@ -10,7 +10,6 @@ import { Linking, Platform, Share } from 'react-native';
 import type { TFunction } from 'i18next';
 
 import type { Diagnosis } from '@/lib/types';
-import { formatPkrRange } from '@/lib/utils';
 
 /** How the message ended up leaving the app, so the UI can explain itself. */
 export type SendOutcome = 'whatsapp' | 'shared' | 'failed';
@@ -40,13 +39,13 @@ function joinLines(lines: (string | null)[]): string {
 
 /**
  * The full handoff: what the phone is, what the customer said, what MobiDoc
- * thinks, the expected range, and the questions worth asking at the counter.
+ * thinks, and the questions worth asking at the counter. The cost estimate is
+ * deliberately left out — the shop should quote its own price, and showing our
+ * range first anchors the negotiation against the customer.
  */
 export function buildRepairMessage(diagnosis: Diagnosis, t: TFunction, shopName?: string): string {
-  const { cost } = diagnosis;
   const topCause = diagnosis.likelyCauses[0];
   const questions = diagnosis.questionsForShop.slice(0, 3);
-  const needsParts = cost.partsMax > 0;
 
   return joinLines([
     shopName ? t('whatsapp.greetingShop') : t('whatsapp.greeting'),
@@ -56,13 +55,6 @@ export function buildRepairMessage(diagnosis: Diagnosis, t: TFunction, shopName?
     '',
     t('whatsapp.reading', { issue: diagnosis.issueTitle }),
     topCause ? t('whatsapp.cause', { cause: topCause.title }) : null,
-    t('whatsapp.cost', { range: formatPkrRange(cost.min, cost.max) }),
-    needsParts
-      ? t('whatsapp.costParts', {
-          parts: formatPkrRange(cost.partsMin, cost.partsMax),
-          labour: formatPkrRange(cost.labourMin, cost.labourMax),
-        })
-      : null,
     t('whatsapp.time', { time: diagnosis.repairTime }),
     diagnosis.photoUri ? t('whatsapp.photoNote') : null,
     questions.length > 0 ? '' : null,
